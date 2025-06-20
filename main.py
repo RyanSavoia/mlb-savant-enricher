@@ -40,17 +40,24 @@ async def get_savant_data_for_game(away_team: str, home_team: str):
             
             # Find the game and hover over it
             game_found = False
-            game_elements = await page.query_selector_all('[class*="game"], [class*="matchup"]')
+            game_elements = await page.query_selector_all('[class*="game"], [class*="matchup"], div')
             
             for element in game_elements:
                 text = await element.text_content()
-                if away_team in text and home_team in text:
+                # Look for DET and TB in the same element (they're stacked)
+                if text and "DET" in text and "TB" in text:
                     # Hover over the game
                     await element.hover()
                     await page.wait_for_timeout(1000)
                     
-                    # Click Preview Matchup
-                    preview_link = await page.query_selector('text="Preview Matchup"')
+                    # Look for the preview link that appears on hover
+                    preview_link = await page.query_selector('text="Preview Now"')
+                    if not preview_link:
+                        preview_link = await page.query_selector('text="Preview Matchup"')
+                    if not preview_link:
+                        # Try finding by partial text
+                        preview_link = await page.query_selector('[class*="preview"], a:has-text("Flaherty")')
+                    
                     if preview_link:
                         await preview_link.click()
                         game_found = True
