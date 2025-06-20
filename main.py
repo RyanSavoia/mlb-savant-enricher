@@ -210,7 +210,7 @@ async def analyze_game(game_data: dict):
 
 @app.get("/")
 async def get_matchup_analysis():
-    """Get matchup analysis for first game"""
+    """Get matchup analysis for DET @ TB game"""
     try:
         # Get lineups
         lineup_data = await get_lineups()
@@ -218,8 +218,17 @@ async def get_matchup_analysis():
         if not lineup_data:
             return {"error": "No games found"}
         
-        # Analyze first game
-        game = lineup_data[0]
+        # Find DET @ TB game
+        game = None
+        for g in lineup_data:
+            if g["away_team"] == "DET" and g["home_team"] == "TB":
+                game = g
+                break
+        
+        if not game:
+            return {"error": "DET @ TB game not found"}
+        
+        # Analyze the game
         analysis = await analyze_game(game)
         
         return analysis
