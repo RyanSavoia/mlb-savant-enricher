@@ -40,7 +40,7 @@ async def get_pitcher_arsenal(pitcher_name: str):
             await page.goto(f"https://baseballsavant.mlb.com/savant-player/{url_name}", timeout=30000)
             
             # If 404, search for the player
-            if page.url.includes('404'):
+            if '404' in page.url:
                 await page.goto("https://baseballsavant.mlb.com/", timeout=30000)
                 await page.type('input[type="text"]', pitcher_name)
                 await page.wait_for_timeout(2000)
@@ -107,7 +107,7 @@ async def get_batter_vs_pitches(batter_name: str):
             await page.goto(f"https://baseballsavant.mlb.com/savant-player/{url_name}", timeout=30000)
             
             # If 404, search for the player
-            if page.url.includes('404'):
+            if '404' in page.url:
                 await page.goto("https://baseballsavant.mlb.com/", timeout=30000)
                 await page.type('input[type="text"]', batter_name)
                 await page.wait_for_timeout(2000)
@@ -279,16 +279,26 @@ async def analyze_matchup(game: dict):
 @app.get("/")
 async def get_all_matchups():
     """Get all matchups with Savant data"""
-    # Get lineups from your API
-    lineup_data = await get_lineups()
+    print("Starting matchup analysis...")
     
-    # Analyze each game
-    analyzed_games = []
-    for game in lineup_data[:2]:  # Start with just first 2 games for testing
-        analysis = await analyze_matchup(game)
-        analyzed_games.append(analysis)
-    
-    return analyzed_games
+    try:
+        # Get lineups from your API
+        print("Fetching lineups from API...")
+        lineup_data = await get_lineups()
+        print(f"Got {len(lineup_data)} games")
+        
+        # Analyze each game
+        analyzed_games = []
+        for i, game in enumerate(lineup_data[:2]):  # Start with just first 2 games for testing
+            print(f"Analyzing game {i+1}: {game['away_team']} @ {game['home_team']}")
+            analysis = await analyze_matchup(game)
+            analyzed_games.append(analysis)
+        
+        print("Analysis complete!")
+        return analyzed_games
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/matchup/{away_team}/{home_team}")
 async def get_single_matchup(away_team: str, home_team: str):
@@ -313,3 +323,4 @@ async def get_single_matchup(away_team: str, home_team: str):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+    
