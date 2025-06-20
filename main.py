@@ -320,6 +320,25 @@ async def get_single_matchup(away_team: str, home_team: str):
     analysis = await analyze_matchup(game)
     return analysis
 
+
+
+@app.get("/test-lineup-api")
+async def test_lineup_api():
+    """Test connection to lineup API"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(LINEUP_API_URL, timeout=30.0)
+            return {
+                "status": "success",
+                "status_code": response.status_code,
+                "data_length": len(response.json()) if response.status_code == 200 else 0
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+        
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
