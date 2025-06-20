@@ -43,11 +43,30 @@ async def get_pitcher_arsenal(pitcher_name: str):
             # Find and use the search box
             search_box = await page.query_selector('input[type="text"]')
             if search_box:
+                print(f"Found search box, typing: {pitcher_name}")
                 await search_box.type(pitcher_name)
-                await page.wait_for_timeout(2000)
+                await page.wait_for_timeout(3000)  # More time for results
                 
-                # Click the first result in the dropdown
+                # Check what's on the page after typing
+                page_text = await page.evaluate('() => document.body.innerText')
+                print(f"Page contains: {page_text[:200]}...")  # First 200 chars
+                
+                # Try multiple selectors for search results
                 first_result = await page.query_selector('.ui-menu-item a')
+                if not first_result:
+                    first_result = await page.query_selector('a[href*="savant-player"]')
+                if not first_result:
+                    first_result = await page.query_selector('.search-results a')
+                if not first_result:
+                    # Try to find any link with the player's name
+                    all_links = await page.query_selector_all('a')
+                    print(f"Found {len(all_links)} total links on page")
+                    for link in all_links:
+                        text = await link.text_content()
+                        if text and pitcher_name.lower() in text.lower():
+                            first_result = link
+                            break
+                
                 if first_result:
                     await first_result.click()
                     await page.wait_for_timeout(3000)
@@ -57,6 +76,13 @@ async def get_pitcher_arsenal(pitcher_name: str):
                     return []
             else:
                 print("Could not find search box")
+                # Let's see what inputs are on the page
+                all_inputs = await page.query_selector_all('input')
+                print(f"Found {len(all_inputs)} input elements")
+                for i, inp in enumerate(all_inputs):
+                    inp_type = await inp.get_attribute('type')
+                    inp_placeholder = await inp.get_attribute('placeholder')
+                    print(f"Input {i}: type={inp_type}, placeholder={inp_placeholder}")
                 await browser.close()
                 return []
             
@@ -114,10 +140,23 @@ async def get_batter_vs_pitches(batter_name: str):
             search_box = await page.query_selector('input[type="text"]')
             if search_box:
                 await search_box.type(batter_name)
-                await page.wait_for_timeout(2000)
+                await page.wait_for_timeout(3000)  # More time for results
                 
-                # Click the first result in the dropdown
+                # Try multiple selectors for search results
                 first_result = await page.query_selector('.ui-menu-item a')
+                if not first_result:
+                    first_result = await page.query_selector('a[href*="savant-player"]')
+                if not first_result:
+                    first_result = await page.query_selector('.search-results a')
+                if not first_result:
+                    # Try to find any link with the player's name
+                    all_links = await page.query_selector_all('a')
+                    for link in all_links:
+                        text = await link.text_content()
+                        if text and batter_name.lower() in text.lower():
+                            first_result = link
+                            break
+                
                 if first_result:
                     await first_result.click()
                     await page.wait_for_timeout(3000)
