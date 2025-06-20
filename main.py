@@ -24,13 +24,19 @@ async def get_pitcher_data(pitcher_name: str):
         )
         page = await browser.new_page()
         
-        await page.goto("https://baseballsavant.mlb.com/", timeout=30000)
-        await page.wait_for_timeout(2000)
+        # Search on DuckDuckGo
+        search_query = f"site:baseballsavant.mlb.com {pitcher_name}"
+        await page.goto(f"https://duckduckgo.com/?q={search_query}", timeout=30000)
+        await page.wait_for_timeout(3000)
         
-        # Search for pitcher
-        await page.type('input[type="text"]', pitcher_name)
-        await page.press('input[type="text"]', 'Enter')
-        await page.wait_for_timeout(5000)
+        # Click first Baseball Savant link
+        savant_link = await page.query_selector('a[href*="baseballsavant.mlb.com/savant-player"]')
+        if savant_link:
+            await savant_link.click()
+            await page.wait_for_timeout(5000)
+        else:
+            await browser.close()
+            return []
         
         # Extract arsenal
         arsenal = await page.evaluate('''
