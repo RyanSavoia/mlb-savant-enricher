@@ -25,7 +25,7 @@ async def get_lineups():
         return response.json()
 
 async def get_pitcher_arsenal(pitcher_name: str):
-    """Get pitcher arsenal by searching Google"""
+    """Get pitcher arsenal using Baseball Savant's search"""
     async with async_playwright() as p:
         browser = await p.chromium.launch(
             headless=True,
@@ -34,17 +34,29 @@ async def get_pitcher_arsenal(pitcher_name: str):
         page = await browser.new_page()
         
         try:
-            # Google search for the pitcher
-            search_query = f"baseball savant {pitcher_name}"
-            await page.goto(f"https://www.google.com/search?q={search_query}", timeout=30000)
+            print(f"Searching for pitcher: {pitcher_name}")
+            
+            # Go to Baseball Savant
+            await page.goto("https://baseballsavant.mlb.com/", timeout=30000)
             await page.wait_for_timeout(2000)
             
-            # Click the first Baseball Savant result
-            savant_link = await page.query_selector('a[href*="baseballsavant.mlb.com/savant-player"]')
-            if savant_link:
-                await savant_link.click()
-                await page.wait_for_timeout(3000)
+            # Find and use the search box
+            search_box = await page.query_selector('input[type="text"]')
+            if search_box:
+                await search_box.type(pitcher_name)
+                await page.wait_for_timeout(2000)
+                
+                # Click the first result in the dropdown
+                first_result = await page.query_selector('.ui-menu-item a')
+                if first_result:
+                    await first_result.click()
+                    await page.wait_for_timeout(3000)
+                else:
+                    print(f"No search results for {pitcher_name}")
+                    await browser.close()
+                    return []
             else:
+                print("Could not find search box")
                 await browser.close()
                 return []
             
@@ -73,15 +85,17 @@ async def get_pitcher_arsenal(pitcher_name: str):
                 }
             ''')
             
+            print(f"Arsenal for {pitcher_name}: {arsenal}")
             await browser.close()
             return arsenal
             
         except Exception as e:
+            print(f"Error getting arsenal for {pitcher_name}: {str(e)}")
             await browser.close()
             return []
 
 async def get_batter_vs_pitches(batter_name: str):
-    """Get batter stats by searching Google"""
+    """Get batter stats using Baseball Savant's search"""
     async with async_playwright() as p:
         browser = await p.chromium.launch(
             headless=True,
@@ -90,17 +104,29 @@ async def get_batter_vs_pitches(batter_name: str):
         page = await browser.new_page()
         
         try:
-            # Google search for the batter
-            search_query = f"baseball savant {batter_name}"
-            await page.goto(f"https://www.google.com/search?q={search_query}", timeout=30000)
+            print(f"Searching for batter: {batter_name}")
+            
+            # Go to Baseball Savant
+            await page.goto("https://baseballsavant.mlb.com/", timeout=30000)
             await page.wait_for_timeout(2000)
             
-            # Click the first Baseball Savant result
-            savant_link = await page.query_selector('a[href*="baseballsavant.mlb.com/savant-player"]')
-            if savant_link:
-                await savant_link.click()
-                await page.wait_for_timeout(3000)
+            # Find and use the search box
+            search_box = await page.query_selector('input[type="text"]')
+            if search_box:
+                await search_box.type(batter_name)
+                await page.wait_for_timeout(2000)
+                
+                # Click the first result in the dropdown
+                first_result = await page.query_selector('.ui-menu-item a')
+                if first_result:
+                    await first_result.click()
+                    await page.wait_for_timeout(3000)
+                else:
+                    print(f"No search results for {batter_name}")
+                    await browser.close()
+                    return {}
             else:
+                print("Could not find search box")
                 await browser.close()
                 return {}
             
@@ -139,10 +165,12 @@ async def get_batter_vs_pitches(batter_name: str):
                 }
             ''')
             
+            print(f"Pitch data for {batter_name}: {pitch_data}")
             await browser.close()
             return pitch_data
             
         except Exception as e:
+            print(f"Error getting stats for {batter_name}: {str(e)}")
             await browser.close()
             return {}
 
