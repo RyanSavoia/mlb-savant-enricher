@@ -45,11 +45,16 @@ async def get_pitcher_arsenal(pitcher_name: str):
             if search_box:
                 print(f"Found search box, typing: {pitcher_name}")
                 await search_box.type(pitcher_name)
-                await page.wait_for_timeout(3000)  # More time for results
+                await page.press('input[type="text"]', "Enter")  # Press Enter to search
+                await page.wait_for_timeout(5000)  # Wait for navigation
                 
-                # Check what's on the page after typing
-                page_text = await page.evaluate('() => document.body.innerText')
-                print(f"Page contains: {page_text[:200]}...")  # First 200 chars
+                # Verify we're on a player page
+                current_url = page.url
+                print(f"Current URL: {current_url}")
+                if "savant-player" not in current_url:
+                    print("Did not navigate to player page")
+                    await browser.close()
+                    return []
                 
                 # Try multiple selectors for search results
                 first_result = await page.query_selector('.ui-menu-item a')
@@ -140,7 +145,15 @@ async def get_batter_vs_pitches(batter_name: str):
             search_box = await page.query_selector('input[type="text"]')
             if search_box:
                 await search_box.type(batter_name)
-                await page.wait_for_timeout(3000)  # More time for results
+                await page.press('input[type="text"]', "Enter")  # Press Enter to search
+                await page.wait_for_timeout(5000)  # Wait for navigation
+                
+                # Verify we're on a player page
+                current_url = page.url
+                if "savant-player" not in current_url:
+                    print(f"Did not navigate to player page for {batter_name}")
+                    await browser.close()
+                    return {}
                 
                 # Try multiple selectors for search results
                 first_result = await page.query_selector('.ui-menu-item a')
@@ -383,6 +396,18 @@ async def test_lineup_api():
             "status": "error",
             "error": str(e)
         }
+
+@app.get("/test-one-player")
+async def test_one_player():
+    """Test with just one player to debug"""
+    try:
+        result = await get_pitcher_arsenal("Jack Flaherty")
+        return {
+            "player": "Jack Flaherty",
+            "arsenal": result
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.get("/health")
 async def health_check():
