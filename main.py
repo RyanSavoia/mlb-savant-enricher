@@ -323,4 +323,3 @@ async def get_single_matchup(away_team: str, home_team: str):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
-    
